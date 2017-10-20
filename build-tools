@@ -1,0 +1,13 @@
+# Bump changelog
+function bumpChangelog() {
+    if [ -z $1 ]; then
+        echo "usage: $0 <suffix>"
+        exit 1
+    fi
+
+    VERSION_SUFFIX=$1
+
+    sed -e "s/)/+${VERSION_SUFFIX})/" debian/changelog > temp.file
+    mv temp.file debian/changelog
+    echo "The new dch version is:" `head -1 debian/changelog`
+}
