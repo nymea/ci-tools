@@ -1,0 +1,105 @@
+#!/bin/bash -ex
+
+if [ "$6" == "" ]; then
+  echo "usage: $0 <distro> <arch> <git-branch> <debug|release> <check|nocheck> <doc|nodoc>"
+  exit 1
+fi
+
+DISTRO=$1
+ARCH=$2
+GIT_BRANCH=$3
+DBGBUILD=$4
+TESTING=$5
+DOCS=$6
+
+BUILD_PROFILES="cross noautodbgsym"
+if [ "$DBGBUILD" == "debug" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES nostrip"
+else
+  BUILD_PROFILES="$BUILD_PROFILES strip"
+fi
+if [ "$TESTING" == "check" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES check coverage"
+else
+  BUILD_PROFILES="$BUILD_PROFILES nocheck"
+fi
+if [ "$DOCS" == "doc" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES doc"
+else
+  BUILD_PROFILES="$BUILD_PROFILES nodoc"
+fi
+export DEB_BUILD_PROFILES=$BUILD_PROFILES
+
+echo "Building branch $GIT_BRANCH for $DISTRO-$ARCH with build profiles: $DEB_BUILD_PROFILES"
+
+STARTDIR=`pwd`
+BASEDIR=`dirname $0`
+REPODIR=/var/www/ci-repo/$GIT_BRANCH
+TEMPLATEDIR=$BASEDIR/templates
+
+# load build-tools functions
+source $BASEDIR/build-tools
+
+# Create repository
+if [ ! -e $REPODIR/$GIT_BRANCH/conf/distributions ]; then
+  echo "Creating repository at $REPODIR/$GIT_BRANCH/"
+  mkdir -p $REPODIR/conf
+  cp $TEMPLATEDIR/distributions $REPODIR/conf/
+  cp $TEMPLATEDIR/options $REPODIR/conf/
+  sed -i "s@\@REPO_DIR\@@${REPODIR}@g" $REPODIR/conf/options
+fi
+
+# prepare source code (check out all repos next to each other)
+git clone https://github.com/guh/guh.git
+cd guh
+git merge origin/$GIT_BRANCH
+
+cd ..
+git clone https://github.com/guh/guh-plugins.git
+cd guh-plugins
+set +e
+git merge origin/$GIT_BRANCH
+RESULT=$?
+set -e
+if [ $RESULT -ne 0 ]; then
+  echo No corresponding plugins branch found. Building master...
+  git checkout master
+fi
+cd ..
+
+cd guh && dch --release "Jenkins release" && cd ..
+cd guh-plugins && dch --release "Jenkins release" && cd ..
+
+PREFIX=`uuidgen | head -c 8 ; echo`
+CROSSBUILDER_ARGS="--container-prefix=builder-$PREFIX -u $DISTRO -a $ARCH"
+
+# pre-cleanup, just to make sure a previous build didn't leave this around
+cd guh; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+cd guh-plugins; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+
+# install a cleanup trap in case we fail
+function finish {
+  cd $STARTDIR
+  cd guh; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+  cd guh-plugins; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+}
+trap finish EXIT
+
+
+# build the beast!
+crossbuilder $CROSSBUILDER_ARGS build guh guh-plugins
+
+# generate coverage reports for guh
+if [ "$TESTING" == "check" ]; then
+  cd guh
+  crossbuilder $CROSSBUILDER_ARGS run make generate-coverage-html
+  crossbuilder $CROSSBUILDER_ARGS run make generate-coverage-gcovr
+
+  cp -rv coverage-html ../
+  cp -rv html ../doc-html
+
+  cd ..
+fi
+
+tar xvf guh-plugins/debs*.tar
+
