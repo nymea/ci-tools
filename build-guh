@@ -40,15 +40,6 @@ TEMPLATEDIR=$BASEDIR/templates
 # load build-tools functions
 source $BASEDIR/build-tools
 
-# Create repository
-if [ ! -e $REPODIR/$GIT_BRANCH/conf/distributions ]; then
-  echo "Creating repository at $REPODIR/$GIT_BRANCH/"
-  mkdir -p $REPODIR/conf
-  cp $TEMPLATEDIR/distributions $REPODIR/conf/
-  cp $TEMPLATEDIR/options $REPODIR/conf/
-  sed -i "s@\@REPO_DIR\@@${REPODIR}@g" $REPODIR/conf/options
-fi
-
 # prepare source code (check out all repos next to each other)
 git clone https://github.com/guh/guh.git
 cd guh
