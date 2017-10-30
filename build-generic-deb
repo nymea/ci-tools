@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ "$4" == "" ]; then
+  echo "usage: $0 <git repo> <git branch> <distro> <arch>"
+  exit 1
+fi
+
+GIT_REPO=$1
+GIT_BRANCH=$2
+DISTRO=$3
+ARCH=$4
+
+
+git clone $GIT_REPO src
+cd src
+git checkout $GIT_BRANCH
+
+
+source /opt/tools/build-tools
+dch --release "Jenkins release"
+bumpChangelog "`date +%Y%m%d%H%M`~`git rev-parse --short HEAD`~$DISTRO"
+
+export DEB_BUILD_PROFILES="strip nocheck"
+
+PREFIX=`uuidgen | head -c 8 ; echo`
+CROSSBUILDER_ARGS="--container-prefix=builder-generic-deb-$PREFIX -u $DISTRO -a $ARCH"
+
+crossbuilder $CROSSBUILDER_ARGS delete || true
+crossbuilder $CROSSBUILDER_ARGS dependencies
+crossbuilder $CROSSBUILDER_ARGS build
+crossbuilder $CROSSBUILDER_ARGS delete
+
+tar xvf *.tar -C ..
