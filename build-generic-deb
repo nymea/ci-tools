@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 if [ "$4" == "" ]; then
   echo "usage: $0 <git repo> <git branch> <distro> <arch>"
