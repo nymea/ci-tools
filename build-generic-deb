@@ -23,11 +23,16 @@ bumpChangelog "`date +%Y%m%d%H%M`~`git rev-parse --short HEAD`~$DISTRO"
 export DEB_BUILD_PROFILES="strip nocheck noautodbgsym"
 
 PREFIX=`uuidgen | head -c 8 ; echo`
-CROSSBUILDER_ARGS="--container-prefix=generic-deb-$PREFIX -u $DISTRO -a $ARCH"
+CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH"
+
+# install a cleanup trap in case we fail
+function finish {
+  crossbuilder $CROSSBUILDER_ARGS delete || true
+}
+trap finish EXIT
 
 crossbuilder $CROSSBUILDER_ARGS delete || true
 crossbuilder $CROSSBUILDER_ARGS dependencies
 crossbuilder $CROSSBUILDER_ARGS build
-crossbuilder $CROSSBUILDER_ARGS delete
 
 tar xvf *.tar -C ..
