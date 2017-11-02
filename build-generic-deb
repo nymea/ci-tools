@@ -20,10 +20,10 @@ source /opt/tools/build-tools
 dch --release "Jenkins release"
 bumpChangelog "`date +%Y%m%d%H%M`~`git rev-parse --short HEAD`~$DISTRO"
 
-export DEB_BUILD_PROFILES="strip nocheck"
+export DEB_BUILD_PROFILES="strip nocheck noautodbgsym"
 
 PREFIX=`uuidgen | head -c 8 ; echo`
-CROSSBUILDER_ARGS="--container-prefix=builder-generic-deb-$PREFIX -u $DISTRO -a $ARCH"
+CROSSBUILDER_ARGS="--container-prefix=generic-deb-$PREFIX -u $DISTRO -a $ARCH"
 
 crossbuilder $CROSSBUILDER_ARGS delete || true
 crossbuilder $CROSSBUILDER_ARGS dependencies
