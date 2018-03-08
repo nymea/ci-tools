@@ -1,0 +1,66 @@
+#!/bin/bash -e
+
+if [ "$1" == "" ]; then
+  echo "usage: $0 <git branch>"
+  exit 1
+fi
+
+GIT_BRANCH=$1
+MERGED_NYMEA=0
+MERGED_NYMEA_PLUGINS=0
+
+mkdir source_merge
+cd source_merge
+
+git clone git@github.com:guh/nymea.git
+cd nymea
+set +e
+git branch -a | grep origin/$GIT_BRANCH
+RES=$?
+set -e
+if [ $RES -ne 0 ]; then
+  echo "No such remote branch $GIT_BRANCH for repository nymea."
+else
+  git merge origin/$GIT_BRANCH --no-edit
+  MERGED_NYMEA=1
+  qmake .
+  make lupdate
+  git commit -a -m "Automatic translations update by Jenkins" || true
+fi
+cd ..
+
+git clone git@github.com:guh/nymea-plugins.git
+cd nymea-plugins
+set +e
+git branch -a | grep origin/$GIT_BRANCH
+RES=$?
+set -e
+if [ $RES -ne 0 ]; then
+  echo "No such remote branch $GIT_BRANCH for repository nymea-plugins."
+else
+  git merge origin/$GIT_BRANCH --no-edit
+  MERGED_NYMEA_PLUGINS=1
+  export PATH="`pwd`/../nymea/plugins:$PATH"
+  export CPATH="`pwd`/../nymea/libnymea/"
+  export LIBRARY_PATH="`pwd`/../nymea/"
+  qmake .
+  make lupdate
+  git commit -a -m "Automatic translations update by Jenkins" || true
+fi
+cd ..
+
+# Okay, merging succeeded, let's go ahead and push
+if [ $MERGED_NYMEA -eq 1 ]; then
+  echo "Pushing merged nymea code to github"
+  cd nymea
+  git push
+  cd ..
+fi
+if [ $MERGED_NYMEA_PLUGINS -eq 1 ]; then
+  echo "Pushing merged nymea-plugins code to github"
+  cd nymea-plugins
+  git push
+  cd ..
+fi
+
+cd ..
