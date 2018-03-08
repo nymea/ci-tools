@@ -42,6 +42,7 @@ source $BASEDIR/build-tools
 
 # prepare source code (check out all repos next to each other)
 HAVE_BRANCH=0
+HAVE_PLUGINS_BRANCH=0
 git clone https://github.com/guh/guh.git
 set +e
 git -C guh merge origin/$GIT_BRANCH
@@ -63,10 +64,10 @@ if [ $RESULT -ne 0 ]; then
   echo No corresponding plugins branch found. Building master...
   git -C guh-plugins checkout master
 else
-  HAVE_BRANCH=1
+  HAVE_PLUGINS_BRANCH=1
 fi
 
-if [ $HAVE_BRANCH -eq 0 ]; then
+if [ $HAVE_BRANCH -eq 0 && $HAVE_PLUGINS_BRANCH -eq 0 ]; then
   echo "Neither guh nor guh-plugins have a branch named $GIT_BRANCH. Cannot continue."
   exit 1
 fi
