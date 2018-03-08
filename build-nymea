@@ -1,0 +1,110 @@
+#!/bin/bash -ex
+
+if [ "$6" == "" ]; then
+  echo "usage: $0 <distro> <arch> <git-branch> <debug|release> <check|nocheck> <doc|nodoc>"
+  exit 1
+fi
+
+DISTRO=$1
+ARCH=$2
+GIT_BRANCH=$3
+DBGBUILD=$4
+TESTING=$5
+DOCS=$6
+
+BUILD_PROFILES="cross noautodbgsym"
+if [ "$DBGBUILD" == "debug" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES nostrip"
+else
+  BUILD_PROFILES="$BUILD_PROFILES strip"
+fi
+if [ "$TESTING" == "check" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES check coverage"
+else
+  BUILD_PROFILES="$BUILD_PROFILES nocheck"
+fi
+if [ "$DOCS" == "doc" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES doc"
+else
+  BUILD_PROFILES="$BUILD_PROFILES nodoc"
+fi
+export DEB_BUILD_PROFILES=$BUILD_PROFILES
+
+echo "Building branch $GIT_BRANCH for $DISTRO-$ARCH with build profiles: $DEB_BUILD_PROFILES"
+
+STARTDIR=`pwd`
+BASEDIR=`dirname $0`
+REPODIR=/var/www/ci-repo/$GIT_BRANCH
+TEMPLATEDIR=$BASEDIR/templates
+
+# load build-tools functions
+source $BASEDIR/build-tools
+
+# prepare source code (check out all repos next to each other)
+HAVE_BRANCH=0
+HAVE_PLUGINS_BRANCH=0
+git clone https://github.com/guh/nymea.git
+set +e
+git -C nymea merge origin/$GIT_BRANCH
+RESULT=$$
+set -e
+if [ $RESULT -ne 0 ]; then
+  echo No corresponding nymea branch found. Building master...
+  git -C nymea checkout master
+else
+  HAVE_BRANCH=1
+fi
+
+git clone https://github.com/guh/nymea-plugins.git
+set +e
+git -C nymea-plugins merge origin/$GIT_BRANCH
+RESULT=$?
+set -e
+if [ $RESULT -ne 0 ]; then
+  echo No corresponding plugins branch found. Building master...
+  git -C nymea-plugins checkout master
+else
+  HAVE_PLUGINS_BRANCH=1
+fi
+
+if [ $HAVE_BRANCH -eq 0 && $HAVE_PLUGINS_BRANCH -eq 0 ]; then
+  echo "Neither nymea nor nymea-plugins have a branch named $GIT_BRANCH. Cannot continue."
+  exit 1
+fi
+
+cd nymea && dch --release "Jenkins release" && cd ..
+cd nymea-plugins && dch --release "Jenkins release" && cd ..
+
+PREFIX=`uuidgen | head -c 8 ; echo`
+CROSSBUILDER_ARGS="--container-prefix=builder-$PREFIX -u $DISTRO -a $ARCH"
+
+# pre-cleanup, just to make sure a previous build didn't leave this around
+cd nymea; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+cd nymea-plugins; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+
+# install a cleanup trap in case we fail
+function finish {
+  cd $STARTDIR
+  cd nymea; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+  cd nymea-plugins; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..
+}
+trap finish EXIT
+
+
+# build the beast!
+crossbuilder $CROSSBUILDER_ARGS build nymea nymea-plugins
+
+# generate coverage reports for nymea
+if [ "$TESTING" == "check" ]; then
+  cd nymea
+  crossbuilder $CROSSBUILDER_ARGS run make generate-coverage-html
+  crossbuilder $CROSSBUILDER_ARGS run make generate-coverage-gcovr
+
+  cp -rv coverage-html ../
+  cp -rv html ../doc-html
+
+  cd ..
+fi
+
+tar xvf nymea-plugins/debs*.tar
+
