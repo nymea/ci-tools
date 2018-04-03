@@ -67,7 +67,7 @@ else
   HAVE_PLUGINS_BRANCH=1
 fi
 
-if [ $HAVE_BRANCH -eq 0 && $HAVE_PLUGINS_BRANCH -eq 0 ]; then
+if [ $HAVE_BRANCH -eq 0 ] && [ $HAVE_PLUGINS_BRANCH -eq 0 ]; then
   echo "Neither nymea nor nymea-plugins have a branch named $GIT_BRANCH. Cannot continue."
   exit 1
 fi
