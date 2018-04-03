@@ -46,7 +46,7 @@ HAVE_PLUGINS_BRANCH=0
 git clone https://github.com/guh/nymea.git
 set +e
 git -C nymea merge origin/$GIT_BRANCH
-RESULT=$$
+RESULT=$?
 set -e
 if [ $RESULT -ne 0 ]; then
   echo No corresponding nymea branch found. Building master...
