@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Usage: publish-download-section [files]
+
+RELEASEDIR=/var/www/downloads/nymea-app
+
+if [ "$1" == "-r" ]; then
+    shift
+    RELEASEDIR=$1
+    shift
+fi
+
+while [ "$1" != "" ]; do
+    FILE=$1
+    FILENAME=$(basename -- "$1")
+    EXTENSION="${FILENAME##*.}"
+    NAME="${FILENAME%.*}"
+
+    echo "Processing file $1"
+    echo "    name: ${NAME}"
+    echo "    extension ${EXTENSION}"
+
+    if [ "${EXTENSION}" == "exe" ]; then
+        STATICNAME=nymea-app-win-installer.exe
+        echo "Release windows build ${FILENAME} --> ${STATICNAME}"
+    fi
+
+    if [ "${EXTENSION}" == "dmg" ]; then
+        STATICNAME=nymea-app-osx-bundle.dmg
+        echo "Release macmacos build ${FILENAME} --> ${STATICNAME}"
+    fi
+
+    # Release if we have a candidate
+    if [ ! -z ${STATICNAME} ]; then
+        cp -v ${FILE} ${RELEASEDIR}
+
+        # Clean link
+        if [ -f ${RELEASEDIR}/${STATICNAME} ]; then
+            rm -v ${RELEASEDIR}/${STATICNAME}
+        fi
+
+        # Create new link static
+        ln -v ${RELEASEDIR}/${FILENAME} ${RELEASEDIR}/${STATICNAME}
+        ls -l ${RELEASEDIR}/${STATICNAME}
+    fi
+
+    shift
+done

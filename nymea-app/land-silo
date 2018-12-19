@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd nymea-app
+git checkout master
+git merge landing-silo
+git push
