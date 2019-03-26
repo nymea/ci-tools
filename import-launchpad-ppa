@@ -1,0 +1,3 @@
+wget --recursive --no-parent --reject-regex "index.html*" --reject-regex "*\~pre*" http://ppa.launchpad.net/$SOURCE_PPA/ubuntu/
+
+find .

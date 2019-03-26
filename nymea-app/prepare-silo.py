@@ -88,7 +88,9 @@ versionfile.write("%s.%s.%s\n" % (major_version, minor_version, patch_version))
 versionfile.write("%s\n" % revision)
 versionfile.close()
 
-call("git", "commit", "-am", "Jenkins automated build")
+call("lupdate", "nymea-app.pro")
+
+call("git", "commit", "-am", "Jenkins automated build %s.%s.%s (%s)" % (major_version, minor_version, patch_version, revision))
 call("git", "push", "origin", silo_name, "-f")
 os.chdir("..")
 

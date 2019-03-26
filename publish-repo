@@ -1,0 +1,52 @@
+#!/bin/bash -ex
+
+if [ "$3" == "" ]; then
+  echo "usage: $0 <reponame> <distro> <packagedir> [component]"
+  exit 1
+fi
+
+BASEDIR=`dirname $0`
+REPODIR=$1
+TEMPLATEDIR=$BASEDIR/templates
+DISTRO=$2
+PACKAGEDIR=$3
+if [ "$4" != "" ]; then
+  COMPONENT=$4
+else
+  COMPONENT=main
+fi
+
+# Create repository
+if [ ! -e $REPODIR/conf/distributions ]; then
+  echo "Creating repository at $REPODIR/$GIT_BRANCH/"
+  mkdir -p $REPODIR/conf
+  cp $TEMPLATEDIR/distributions $REPODIR/conf/
+  cp $TEMPLATEDIR/options $REPODIR/conf/
+  sed -i "s@\@REPO_DIR\@@${REPODIR}@g" $REPODIR/conf/options
+fi
+
+echo "Publishing packages for $DISTRO"
+PACKAGELIST=$(find $PACKAGEDIR -name '*.deb' -not -name '*all.deb')
+if [ "$PACKAGELIST" != "" ]; then
+  reprepro -C $COMPONENT -Vb $REPODIR includedeb $DISTRO $PACKAGELIST
+fi
+# Packages with _all.deb and the source package are allowed to fail as they might have
+# been imported by another arch build already. If we made it till here, any other
+# fail case is very unlikely and we have released at least most of the binary packages
+# already. In this case we don't want to stop the pipeline from proceeding any more.
+set +e
+PACKAGELIST=$(find $PACKAGEDIR -name '*all.deb')
+if [ "$PACKAGELIST" != "" ]; then
+  reprepro -C $COMPONENT -Vb $REPODIR includedeb $DISTRO $PACKAGELIST
+fi
+
+# Look for source packages in .
+for i in `ls $PACKAGEDIR/*.dsc`; do
+ reprepro -C $COMPONENT -Vb $REPODIR includedsc $DISTRO $i
+done
+
+# Look for source packages in ./source_repository (e.g. crossbuilder creates sucha folder structure)
+for i in `ls $PACKAGEDIR/source_repository/*.dsc`; do
+ reprepro -C $COMPONENT -Vb $REPODIR includedsc $DISTRO $i
+done
+set -e
