@@ -14,7 +14,7 @@ DOCS=$6
 
 BUILD_PROFILES="cross noautodbgsym"
 if [ "$DBGBUILD" == "debug" ]; then
-  BUILD_PROFILES="$BUILD_PROFILES nostrip"
+  BUILD_PROFILES="$BUILD_PROFILES nostrip debug"
 else
   BUILD_PROFILES="$BUILD_PROFILES strip"
 fi

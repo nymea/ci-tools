@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash
 
 if [ "$3" == "" ]; then
   echo "usage: $0 <reponame> <distro> <packagedir> [component]"

@@ -32,7 +32,7 @@ for repository in ["git@github.com:guh/nymea.git", "git@github.com:guh/nymea-plu
   pull_requests = []
   for pull_request_data in pull_requests_data:
     if len(pull_request_data["labels"]) > 0 and pull_request_data["labels"][0]["name"] == tag_name:
-      pull_requests.append(pull_request_data)
+      pull_requests.insert(0, pull_request_data)
 
   if len(pull_requests) == 0:
     dbg("W: No pull requests with tag \"%s\" found for %s. Rebuilding master." % (tag_name, repository))

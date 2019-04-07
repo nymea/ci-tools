@@ -1,3 +1,28 @@
-wget --recursive --no-parent --reject-regex "index.html*" --reject-regex "*\~pre*" http://ppa.launchpad.net/$SOURCE_PPA/ubuntu/
+#!/bin/bash
 
-find .
+if [ "$4" == "" ]; then
+  echo "usage: $0 <source-ppa> <target-repo> <target-distro> <target-component>"
+  echo "example $0 mzanetti/nymea-qt-backports /var/www/ci-repo/mytestrepo bionic backports"
+  echo "would import http://ppa.launchpad.net/mzanetti/nymea-qt-backports/ubuntu/ into /var/www/ci-repo/mytestrepo and publish packages for bionic in component \"backports\""
+  exit 1
+fi
+
+SOURCE_PPA=$1
+TARGET_REPO=$2
+TARGET_DISTRO=$3
+TARGET_COMPONENT=$4
+
+mkdir workdir
+cd workdir
+
+wget --recursive --no-parent -R "index.html*" -R "*~pre*"  http://ppa.launchpad.net/$SOURCE_PPA/ubuntu/
+
+BASE_DIR="ppa.launchpad.net/$SOURCE_PPA/ubuntu/pool/main"
+for i in `ls $BASE_DIR`; do
+  echo "Importing $BASE_DIR/$i"
+  for j in `ls $BASE_DIR/$i`; do
+    /opt/tools/publish-repo $TARGET_REPO $TARGET_DISTRO $BASE_DIR/$i/$j $TARGET_COMPONENT
+  done
+done
+
+cd ..
