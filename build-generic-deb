@@ -14,6 +14,7 @@ ARCH=$4
 git clone $GIT_REPO src
 cd src
 git checkout $GIT_BRANCH
+git submodule update --init
 
 
 source /opt/tools/build-tools

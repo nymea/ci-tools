@@ -47,7 +47,7 @@ for repository in ["git@github.com:guh/nymea.git", "git@github.com:guh/nymea-plu
     pr_title = pull_request["title"]
     pr_number = pull_request["number"]
     commit_msg = "Merge PR #%i: %s" % (pr_number, pr_title)
-    dbg("I: %s" % (commit_msg))
+    dbg("I: %s (branch: %s)" % (commit_msg, branch_name))
     call("git", "merge", "--no-ff", ("origin/%s" % branch_name), "-m", commit_msg)
 
 #  call("dch", "-i", "-U", "Prepare for release")
