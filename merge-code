@@ -24,6 +24,7 @@ else
   git merge origin/$GIT_BRANCH --no-edit
   MERGED_NYMEA=1
   qmake .
+  make qmake_all
   make lupdate
   git commit -a -m "Automatic translations update by Jenkins" || true
 fi
@@ -43,6 +44,7 @@ else
   export PATH="`pwd`/../nymea/plugins:$PATH"
   export CPATH="`pwd`/../nymea/libnymea/"
   export LIBRARY_PATH="`pwd`/../nymea/"
+  export PKG_CONFIG_PATH="`pwd`/../nymea/libnymea"
   qmake .
   make lupdate
   git commit -a -m "Automatic translations update by Jenkins" || true

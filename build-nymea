@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
 if [ "$6" == "" ]; then
-  echo "usage: $0 <distro> <arch> <git-branch> <debug|release> <check|nocheck> <doc|nodoc>"
+  echo "usage: $0 <distro> <arch> <git-branch> <debug|release> <check|nocheck> <doc|nodoc> <backports|nobackports>"
   exit 1
 fi
 
@@ -11,6 +11,7 @@ GIT_BRANCH=$3
 DBGBUILD=$4
 TESTING=$5
 DOCS=$6
+BACKPORTS=$7
 
 BUILD_PROFILES="cross noautodbgsym"
 if [ "$DBGBUILD" == "debug" ]; then
@@ -77,6 +78,9 @@ cd nymea-plugins && dch --release "Jenkins release" && cd ..
 
 PREFIX=`uuidgen | head -c 8 ; echo`
 CROSSBUILDER_ARGS="--container-prefix=builder-$PREFIX -u $DISTRO -a $ARCH"
+if [ "$BACKPORTS" == "backports" ]; then
+  CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --enable-backports"
+fi
 
 # pre-cleanup, just to make sure a previous build didn't leave this around
 cd nymea; crossbuilder $CROSSBUILDER_ARGS delete || true; cd ..

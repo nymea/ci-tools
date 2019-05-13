@@ -88,7 +88,22 @@ versionfile.write("%s.%s.%s\n" % (major_version, minor_version, patch_version))
 versionfile.write("%s\n" % revision)
 versionfile.close()
 
-call("lupdate", "nymea-app.pro")
+
+users_cache = {}
+for pull_request in pull_requests:
+  comitter_user = pull_request["user"]["login"]
+  if comitter_user not in users_cache:
+    user_data = simplejson.load(urlopen(pull_request["user"]["url"]))
+    comitter_name = user_data["name"]
+    users_cache[comitter_user] = comitter_name
+
+  pr_title = pull_request["title"]
+  env_override = os.environ.copy()
+  env_override["DEBFULLNAME"] = users_cache[comitter_user]
+#   call("dch", "-a", pr_title, env=env_override)
+  call("dch", "-v", ("%s.%s.%s" % (major_version, minor_version, patch_version)), "-U", pr_title, env=env_override)
+
+call("dch", "--distribution", "bionic", "-r", "")
 
 call("git", "commit", "-am", "Jenkins automated build %s.%s.%s (%s)" % (major_version, minor_version, patch_version, revision))
 call("git", "push", "origin", silo_name, "-f")

@@ -1,14 +1,33 @@
 #!/bin/bash -ex
 
 if [ "$4" == "" ]; then
-  echo "usage: $0 <git repo> <git branch> <distro> <arch>"
+  echo "usage: $0 <git repo> <git branch> <distro> <arch> <debug|release> <check|nocheck> <doc|nodoc> [additional-repo ...]"
+  echo "git repo:         The git repo to build"
+  echo "git branch:       The git branch to build"
+  echo "distro:           The distro to build for (xenial, bionic, stretch, disco)"
+  echo "arch:             The arch to build for (amd64, i386, arm64, armhf)"
+  echo "debug|release:    The build mode"
+  echo "check|nocheck:    Whether to run make check"
+  echo "doc|nodoc:        Whether to build the -doc package (might fail for cross builds)"
+  echo "additional repos: Additional dpkg repositories to be used for installing dependencies"
   exit 1
 fi
 
 GIT_REPO=$1
-GIT_BRANCH=$2
-DISTRO=$3
-ARCH=$4
+shift
+GIT_BRANCH=$1
+shift
+DISTRO=$1
+shift
+ARCH=$1
+shift
+DBGBUILD=$1
+shift
+TESTING=$1
+shift
+DOCS=$1
+shift
+ADDITIONAL_REPOS=$@
 
 
 git clone $GIT_REPO src
@@ -17,13 +36,35 @@ git checkout $GIT_BRANCH
 git submodule update --init
 
 
+BUILD_PROFILES="cross noautodbgsym"
+if [ "$DBGBUILD" == "debug" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES nostrip debug"
+else
+  BUILD_PROFILES="$BUILD_PROFILES strip"
+fi
+if [ "$TESTING" == "check" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES check coverage"
+else
+  BUILD_PROFILES="$BUILD_PROFILES nocheck"
+fi
+if [ "$DOCS" == "doc" ]; then
+  BUILD_PROFILES="$BUILD_PROFILES doc"
+else
+  BUILD_PROFILES="$BUILD_PROFILES nodoc"
+fi
+export DEB_BUILD_PROFILES=$BUILD_PROFILES
+
+
 source /opt/tools/build-tools
 dch --release "Jenkins release"
 
-export DEB_BUILD_PROFILES="strip nocheck noautodbgsym"
 
 PREFIX=`uuidgen | head -c 8 ; echo`
 CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH"
+
+for repo in $ADDITIONAL_REPOS; do
+  CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --add-repository $repo"
+done
 
 # install a cleanup trap in case we fail
 function finish {
@@ -31,6 +72,7 @@ function finish {
 }
 trap finish EXIT
 
+echo "Building with: crossbuilder $CROSSBUILDER_ARGS"
 crossbuilder $CROSSBUILDER_ARGS delete || true
 crossbuilder $CROSSBUILDER_ARGS dependencies
 crossbuilder $CROSSBUILDER_ARGS build
