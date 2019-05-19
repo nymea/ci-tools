@@ -1,9 +1,10 @@
 #!/bin/bash -ex
 
-if [ "$4" == "" ]; then
-  echo "usage: $0 <git repo> <git branch> <distro> <arch> <debug|release> <check|nocheck> <doc|nodoc> [additional-repo ...]"
+if [ "$5" == "" ]; then
+  echo "usage: $0 <git repo> <git branch> <destdir> <distro> <arch> <debug|release> <check|nocheck> <doc|nodoc> [additional-repo ...]"
   echo "git repo:         The git repo to build"
   echo "git branch:       The git branch to build"
+  echo "destdir:          The output directory"
   echo "distro:           The distro to build for (xenial, bionic, stretch, disco)"
   echo "arch:             The arch to build for (amd64, i386, arm64, armhf)"
   echo "debug|release:    The build mode"
@@ -16,6 +17,8 @@ fi
 GIT_REPO=$1
 shift
 GIT_BRANCH=$1
+shift
+DESTDIR=$1
 shift
 DISTRO=$1
 shift
@@ -30,8 +33,8 @@ shift
 ADDITIONAL_REPOS=$@
 
 
-git clone $GIT_REPO src
-cd src
+git clone $GIT_REPO $DESTDIR
+cd $DESTDIR
 git checkout $GIT_BRANCH
 git submodule update --init
 
