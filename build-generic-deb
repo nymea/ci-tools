@@ -63,7 +63,7 @@ dch --release "Jenkins release"
 
 
 PREFIX=`uuidgen | head -c 8 ; echo`
-CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH"
+CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH -c"
 
 for repo in $ADDITIONAL_REPOS; do
   CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --add-repository $repo"
