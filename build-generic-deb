@@ -59,8 +59,12 @@ export DEB_BUILD_PROFILES=$BUILD_PROFILES
 
 
 source /opt/tools/build-tools
-#dch --release "Jenkins release"
 
+# Append distro to changelog
+
+CURRENT_VERSION=`dpkg-parsechangelog --show-field Version`
+dch -U "Build for $DISTRO" -v "$CURRENT_VERSION+$DISTRO"
+dch -r ""
 
 PREFIX=`uuidgen | head -c 8 ; echo`
 CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH -c"
@@ -71,7 +75,13 @@ done
 
 # install a cleanup trap in case we fail
 function finish {
-  crossbuilder $CROSSBUILDER_ARGS delete || true
+  (
+    # Wait for lock on /var/lock/.myscript.exclusivelock (fd 200) for 10 seconds
+    flock -x -w 120 200 || exit 1
+
+    crossbuilder $CROSSBUILDER_ARGS delete || true
+
+  ) 200>/var/lock/.build-generic-deb.exclusivelock
 }
 trap finish EXIT
 
