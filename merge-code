@@ -1,68 +1,50 @@
 #!/bin/bash -e
 
-if [ "$1" == "" ]; then
-  echo "usage: $0 <git branch>"
+if [ "$2" == "" ]; then
+  echo "usage: $0 <repo> <git branch>"
   exit 1
 fi
 
-GIT_BRANCH=$1
-MERGED_NYMEA=0
-MERGED_NYMEA_PLUGINS=0
+REPO=$1
+GIT_BRANCH=$2
 
-mkdir source_merge
-cd source_merge
+mkdir source_merge_$REPO
+cd source_merge_$REPO
 
-git clone git@github.com:guh/nymea.git
-cd nymea
+git clone git@github.com:guh/$REPO.git
+cd $REPO
 set +e
 git branch -a | grep origin/$GIT_BRANCH
 RES=$?
 set -e
 if [ $RES -ne 0 ]; then
-  echo "No such remote branch $GIT_BRANCH for repository nymea."
-else
-  git merge origin/$GIT_BRANCH --no-edit
-  MERGED_NYMEA=1
-  qmake .
-  make qmake_all
-  make lupdate
-  git commit -a -m "Automatic translations update by Jenkins" || true
+  echo "No such remote branch $GIT_BRANCH for repository $REPO."
+  exit 1
 fi
-cd ..
 
-git clone git@github.com:guh/nymea-plugins.git
-cd nymea-plugins
+git merge origin/$GIT_BRANCH --no-edit
+
+# Export paths to nymea repo so we can run make lupdate on plugins
+export PATH="`pwd`/../../source_merge_nymea/nymea/libnymea/plugin:$PATH"
+export CPATH="`pwd`/../../source_merge_nymea/nymea/libnymea/"
+export LIBRARY_PATH="`pwd`/../../source_merge_nymea/nymea/"
+export PKG_CONFIG_PATH="`pwd`/../../source_merge_nymea/nymea/libnymea/pkgconfig"
+# External plugins require INCLUDEPATH/nymea/plugin.pri
+cp `pwd`/../../source_merge_nymea/nymea/libnymea/plugin/plugin.pri /usr/include/nymea/
+
+qmake .
+make qmake_all
 set +e
-git branch -a | grep origin/$GIT_BRANCH
+make lupdate
 RES=$?
 set -e
-if [ $RES -ne 0 ]; then
-  echo "No such remote branch $GIT_BRANCH for repository nymea-plugins."
-else
-  git merge origin/$GIT_BRANCH --no-edit
-  MERGED_NYMEA_PLUGINS=1
-  export PATH="`pwd`/../nymea/plugins:$PATH"
-  export CPATH="`pwd`/../nymea/libnymea/"
-  export LIBRARY_PATH="`pwd`/../nymea/"
-  export PKG_CONFIG_PATH="`pwd`/../nymea/libnymea"
-  qmake .
-  make lupdate
+if [ $RES -eq 0 ]; then
   git commit -a -m "Automatic translations update by Jenkins" || true
+else
+  echo "WARNING: Translations could not be updated, make lupdate failed"
 fi
-cd ..
 
-# Okay, merging succeeded, let's go ahead and push
-if [ $MERGED_NYMEA -eq 1 ]; then
-  echo "Pushing merged nymea code to github"
-  cd nymea
-  git push
-  cd ..
-fi
-if [ $MERGED_NYMEA_PLUGINS -eq 1 ]; then
-  echo "Pushing merged nymea-plugins code to github"
-  cd nymea-plugins
-  git push
-  cd ..
-fi
+echo "Pushing merged nymea code to github"
+git push
 
 cd ..

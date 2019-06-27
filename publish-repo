@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$3" == "" ]; then
-  echo "usage: $0 <reponame> <distro> <packagedir> [component]"
+  echo "usage: $0 <repodir> <distro> <packagedir> [component]"
   exit 1
 fi
 

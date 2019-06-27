@@ -5,10 +5,13 @@ import sys
 import simplejson
 from urllib.request import urlopen
 import subprocess
-
+from time import gmtime, strftime
 
 def call(*args, env=os.environ):
     return subprocess.check_call(list(args), env=env)
+
+def call_output(*args, env=os.environ):
+    return subprocess.check_output(list(args), env=env)
 
 def dbg(*args, **kwargs):
     print(*args, **kwargs)
@@ -32,8 +35,10 @@ dbg("I: Preparing silo for repository: %s (%s/%s)" % (repository, repo_user, rep
 pull_requests_data = simplejson.load(urlopen("http://api.github.com/repos/%s/%s/pulls" % (repo_user, repo_name)))
 pull_requests = []
 for pull_request_data in pull_requests_data:
-  if len(pull_request_data["labels"]) > 0 and pull_request_data["labels"][0]["name"] == tag_name:
-    pull_requests.insert(0, pull_request_data)
+  for label in pull_request_data["labels"]:
+    if label["name"] == tag_name:
+      pull_requests.insert(0, pull_request_data)
+      break
 
 if len(pull_requests) == 0:
   dbg("W: No pull requests with tag \"%s\" found for %s." % (tag_name, repository))
@@ -52,6 +57,7 @@ for pull_request in pull_requests:
   call("git", "merge", "--no-ff", ("origin/%s" % branch_name), "-m", commit_msg)
 
 #  call("dch", "-i", "-U", "Prepare for release")
+
 users_cache = {}
 for pull_request in pull_requests:
   comitter_user = pull_request["user"]["login"]
@@ -63,9 +69,9 @@ for pull_request in pull_requests:
   pr_title = pull_request["title"]
   env_override = os.environ.copy()
   env_override["DEBFULLNAME"] = users_cache[comitter_user]
-#    call("dch", "-a", pr_title, env=env_override)
   call("dch", "-U", pr_title, env=env_override)
 
+# Finalize release
 call("dch", "-r", "")
 call("git", "commit", "-am", "Jenkins release build")
 call("git", "push", "origin", silo_name, "-f")

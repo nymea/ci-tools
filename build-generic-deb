@@ -30,6 +30,8 @@ TESTING=$1
 shift
 DOCS=$1
 shift
+VERSION_APPEND=$1
+shift
 ADDITIONAL_REPOS=$@
 
 
