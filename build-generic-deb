@@ -59,7 +59,7 @@ export DEB_BUILD_PROFILES=$BUILD_PROFILES
 
 
 source /opt/tools/build-tools
-dch --release "Jenkins release"
+#dch --release "Jenkins release"
 
 
 PREFIX=`uuidgen | head -c 8 ; echo`
