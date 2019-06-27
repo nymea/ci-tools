@@ -63,10 +63,9 @@ export DEB_BUILD_PROFILES=$BUILD_PROFILES
 source /opt/tools/build-tools
 
 # Append distro to changelog
-export DEBFULLNAME="Jenkins"
-export EMAIL="jenkins@nymea.io"
-dch -U "Build for $DISTRO" -l "$VERSION_APPEND~$DISTRO"
-dch -r ""
+dch -U "" -l "$VERSION_APPEND~$DISTRO"
+dch -r "" --distribution $DISTRO
+sed -i '2,7d' debian/changelog
 
 PREFIX=`uuidgen | head -c 8 ; echo`
 CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH -c"
