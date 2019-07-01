@@ -74,6 +74,17 @@ for pull_request in pull_requests:
 # Finalize release
 call("dch", "-r", "")
 call("git", "commit", "-am", "Jenkins release build")
-call("git", "push", "origin", silo_name, "-f")
-os.chdir("..")
 
+merge_result = subprocess.call(["git", "diff", "HEAD^", "origin/%s^" % silo_name, "--exit-code"])
+print("Merge result: %i" % merge_result)
+
+if merge_result == 0:
+  print("I: No changes since last build. Nothing to do...")
+  os.chdir("..")
+  exit(3);
+else
+  print("There are changes. Rebuild required")
+  call("git", "push", "origin", silo_name, "-f")
+
+os.chdir("..")
+exit 0
