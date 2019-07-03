@@ -8,11 +8,15 @@ fi
 REPO=$1
 GIT_BRANCH=$2
 
-mkdir source_merge_$REPO
-cd source_merge_$REPO
+REPO_NAME=`echo $REPO | cut -d ':' -f 2 | cut -d '.' -f 1 | cut -d '/' -f 2`
 
-git clone git@github.com:guh/$REPO.git
-cd $REPO
+echo "Repo: $REPO, branch: $GIT_BRANCH, repo name: $REPO_NAME"
+
+mkdir source_merge_$REPO_NAME
+cd source_merge_$REPO_NAME
+
+git clone $REPO
+cd $REPO_NAME
 set +e
 git branch -a | grep origin/$GIT_BRANCH
 RES=$?
@@ -45,6 +49,6 @@ else
 fi
 
 echo "Pushing merged nymea code to github"
-git push
+#git push
 
 cd ..
