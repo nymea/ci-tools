@@ -48,7 +48,7 @@ else
   echo "WARNING: Translations could not be updated, make lupdate failed"
 fi
 
-echo "Pushing merged nymea code to github"
-#git push
+echo "Pushing merged code back to the repository"
+git push
 
 cd ..
