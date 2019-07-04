@@ -62,9 +62,9 @@ def get_pull_requests_gitlab(repo_user, repo_name, tag_name, token):
   if project_id == -1:
     print("E: Could not find repository %s/%s" % (repo_user, repo_name))
     exit(1)
-  
+
   pull_requests = []
-  merges_data = simplejson.load(urlopen("https://gitlab.nymea.io/api/v4/projects/%s/merge_requests?private_token=%s&labels=%s" % (project_id, token, tag_name)))
+  merges_data = simplejson.load(urlopen("https://gitlab.nymea.io/api/v4/projects/%s/merge_requests?private_token=%s&labels=%s&state=opened" % (project_id, token, tag_name)))
   for merge_data in merges_data:
     pull_request = {}
     pull_request["branch_name"] = merge_data["source_branch"]
