@@ -121,8 +121,7 @@ for pull_request in pull_requests:
 call("dch", "-r", "")
 call("git", "commit", "-am", "Jenkins release build")
 
-merge_result = subprocess.call(["git", "diff", "HEAD^", "origin/%s^" % silo_name, "--exit-code"])
-print("Merge result: %i" % merge_result)
+merge_result = subprocess.call(["git", "diff", "HEAD^", "origin/%s^" % silo_name, "--exit-code", "--quiet"])
 
 if merge_result == 0:
   print("I: No changes since last build. Nothing to do...")
