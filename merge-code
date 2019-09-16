@@ -1,12 +1,18 @@
 #!/bin/bash -e
 
-if [ "$2" == "" ]; then
-  echo "usage: $0 <repo> <git branch>"
+if [ "$3" == "" ]; then
+  echo "usage: $0 <repo> <git branch> [true|false]"
+  echo "true|false at the end indicates a dry run. Which means it'll do all the merging but without pushing back to git"
   exit 1
 fi
 
 REPO=$1
 GIT_BRANCH=$2
+DRY_RUN=$3
+
+if [ "$DRY_RUN" != "false" ]; then
+  DRY_RUN="true"
+fi
 
 REPO_NAME=`echo $REPO | cut -d ':' -f 2 | cut -d '.' -f 1 | cut -d '/' -f 2`
 
@@ -27,6 +33,7 @@ if [ $RES -ne 0 ]; then
 fi
 
 git merge origin/$GIT_BRANCH --no-edit
+git tag `dpkg-parsechangelog --show-field version`
 
 # Export paths to nymea repo so we can run make lupdate on plugins
 export PATH="`pwd`/../../source_merge_nymea/nymea/libnymea/plugin:$PATH"
@@ -34,11 +41,11 @@ export CPATH="`pwd`/../../source_merge_nymea/nymea/libnymea/"
 export LIBRARY_PATH="`pwd`/../../source_merge_nymea/nymea/"
 export PKG_CONFIG_PATH="`pwd`/../../source_merge_nymea/nymea/libnymea/pkgconfig"
 # External plugins require INCLUDEPATH/nymea/plugin.pri
-cp `pwd`/../../source_merge_nymea/nymea/libnymea/plugin/plugin.pri /usr/include/nymea/
+cp `pwd`/../../source_merge_nymea/nymea/libnymea/devices/plugin.pri /usr/include/nymea/
 
+set +e
 qmake .
 make qmake_all
-set +e
 make lupdate
 RES=$?
 set -e
@@ -48,7 +55,11 @@ else
   echo "WARNING: Translations could not be updated, make lupdate failed"
 fi
 
-echo "Pushing merged code back to the repository"
-git push
+if [ "$DRY_RUN" = "false" ]; then
+  echo "Pushing merged code back to the repository"
+  git push
+else
+  echo "DRY RUN. Not actually pushing back to github"
+fi
 
 cd ..

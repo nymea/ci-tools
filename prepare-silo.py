@@ -53,8 +53,9 @@ def get_pull_requests_github(repo_user, repo_name, tag_name, token):
   return pull_requests
 
 def get_pull_requests_gitlab(repo_user, repo_name, tag_name, token):
-  projects_data = simplejson.load(urlopen("https://gitlab.nymea.io/api/v4/projects?private_token=%s&per_page=1000" % token))
+  projects_data = simplejson.load(urlopen("https://gitlab.nymea.io/api/v4/projects?private_token=%s&per_page=2000" % token))
   project_id = -1;
+  #print("data: %s" % projects_data)
   for project_data in projects_data:
     if project_data["path_with_namespace"] == "%s/%s" % (repo_user, repo_name):
       project_id = project_data["id"]
@@ -76,22 +77,28 @@ def get_pull_requests_gitlab(repo_user, repo_name, tag_name, token):
 
 args = sys.argv
 if len(args) < 2:
-  dbg("usage: %s <repo> <tag> [token]" % args[0])
+  dbg("usage: %s <repo> <tag> [--rebuild] [token]" % args[0])
   exit(1)
 
 repository = args[1]
 silo_name = "%s-silo" % args[2]
 tag_name = args[2]
 token = ""
+force_rebuild = 0
 if len(args) > 3:
-  token = args[3]
+  if args[3] == "--rebuild":
+    force_rebuild = 1
+    if len(args) > 4:
+      token = args[4]
+  else:
+    token = args[3]
 
 dbg("I: Preparing silo \"%s\" using tag \"%s\" for repository \"%s\"" % (silo_name, tag_name, repository))
 repo_user, repo_name = parse_repo_url(repository)
 
 pull_requests = get_pull_requests(repository, tag_name, token)
 
-if len(pull_requests) == 0:
+if len(pull_requests) == 0 and not force_rebuild:
   dbg("W: No pull requests with tag \"%s\" found for %s." % (tag_name, repository))
   exit(2)
 
