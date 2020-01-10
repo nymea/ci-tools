@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 if [ "$3" == "" ]; then
   echo "usage: $0 <repo> <git branch> [true|false]"
@@ -33,10 +33,9 @@ if [ $RES -ne 0 ]; then
 fi
 
 git merge origin/$GIT_BRANCH --no-edit
-git tag `dpkg-parsechangelog --show-field version`
 
 # Export paths to nymea repo so we can run make lupdate on plugins
-export PATH="`pwd`/../../source_merge_nymea/nymea/libnymea/plugin:$PATH"
+export PATH="`pwd`/../../source_merge_nymea/nymea/tools/nymea-plugininfocompiler/:$PATH"
 export CPATH="`pwd`/../../source_merge_nymea/nymea/libnymea/"
 export LIBRARY_PATH="`pwd`/../../source_merge_nymea/nymea/"
 export PKG_CONFIG_PATH="`pwd`/../../source_merge_nymea/nymea/libnymea/pkgconfig"
@@ -49,15 +48,20 @@ make qmake_all
 make lupdate
 RES=$?
 set -e
+
 if [ $RES -eq 0 ]; then
   git commit -a -m "Automatic translations update by Jenkins" || true
 else
   echo "WARNING: Translations could not be updated, make lupdate failed"
 fi
 
+TAG=`dpkg-parsechangelog --show-field version`
+echo "Tagging release with: $TAG"
+git tag $TAG
+
 if [ "$DRY_RUN" = "false" ]; then
   echo "Pushing merged code back to the repository"
-  git push
+  git push --follow-tags
 else
   echo "DRY RUN. Not actually pushing back to github"
 fi

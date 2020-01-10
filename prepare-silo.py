@@ -53,7 +53,7 @@ def get_pull_requests_github(repo_user, repo_name, tag_name, token):
   return pull_requests
 
 def get_pull_requests_gitlab(repo_user, repo_name, tag_name, token):
-  projects_data = simplejson.load(urlopen("https://gitlab.nymea.io/api/v4/projects?private_token=%s&per_page=2000" % token))
+  projects_data = simplejson.load(urlopen("https://gitlab.nymea.io/api/v4/projects?private_token=%s&simple=true&search=%s" % (token, repo_name)))
   project_id = -1;
   #print("data: %s" % projects_data)
   for project_data in projects_data:
@@ -125,8 +125,10 @@ for pull_request in pull_requests:
   call("dch", "-U", pr_title, env=env_override)
 
 # Finalize release
+version = call_output("dpkg-parsechangelog", "--show-field", "version").decode('UTF-8')
+
 call("dch", "-r", "")
-call("git", "commit", "-am", "Jenkins release build")
+call("git", "commit", "-am", "Jenkins release build %s" % version)
 
 merge_result = subprocess.call(["git", "diff", "HEAD^", "origin/%s^" % silo_name, "--exit-code", "--quiet"])
 
