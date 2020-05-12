@@ -117,20 +117,22 @@ for pull_request in pull_requests:
 
 #  call("dch", "-i", "-U", "Prepare for release")
 
-for pull_request in pull_requests:
-  author = pull_request["author"]
-  pr_title = pull_request["title"]
-  env_override = os.environ.copy()
-  env_override["DEBFULLNAME"] = author
-  call("dch", "-U", pr_title, env=env_override)
+if os.path.isfile("debian/changelog"):
+  for pull_request in pull_requests:
+    author = pull_request["author"]
+    pr_title = pull_request["title"]
+    env_override = os.environ.copy()
+    env_override["DEBFULLNAME"] = author
+    call("dch", "-U", pr_title, env=env_override)
 
-# Finalize release
-version = call_output("dpkg-parsechangelog", "--show-field", "version").decode('UTF-8')
+  # Finalize release
+  version = call_output("dpkg-parsechangelog", "--show-field", "version").decode('UTF-8')
+  call("dch", "-r", "")
+  call("git", "commit", "-am", "Jenkins release build %s" % version)
 
-call("dch", "-r", "")
-call("git", "commit", "-am", "Jenkins release build %s" % version)
-
-merge_result = subprocess.call(["git", "diff", "HEAD^", "origin/%s^" % silo_name, "--exit-code", "--quiet"])
+  merge_result = subprocess.call(["git", "diff", "HEAD^", "origin/%s^" % silo_name, "--exit-code", "--quiet"])
+else:
+  merge_result = subprocess.call(["git", "diff", "HEAD", "origin/%s" % silo_name, "--exit-code", "--quiet"])
 
 if merge_result == 0:
   print("I: No changes since last build. Nothing to do...")
