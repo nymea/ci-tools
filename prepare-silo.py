@@ -42,6 +42,7 @@ def get_pull_requests_github(repo_user, repo_name, tag_name, token):
         pull_request["branch_name"] = pull_request_data["head"]["ref"]
         pull_request["title"] = pull_request_data["title"]
         pull_request["number"] = pull_request_data["number"]
+        pull_request["branch_ref"] = "pull/%s/head" % pull_request_data["number"]
         comitter_user = pull_request_data["user"]["login"]
         if comitter_user not in users_cache:
           user_data = simplejson.load(urlopen(pull_request_data["user"]["url"]))
@@ -72,6 +73,7 @@ def get_pull_requests_gitlab(repo_user, repo_name, tag_name, token):
     pull_request["title"] = merge_data["title"]
     pull_request["number"] = merge_data["iid"]
     pull_request["author"] = merge_data["author"]["name"]
+    pull_request["branch_ref"] = "merge-requests/%s/head" % merge_data["iid"]
     pull_requests.insert(0, pull_request)
   return pull_requests
 
@@ -113,7 +115,8 @@ for pull_request in pull_requests:
   branch_name = pull_request["branch_name"]
   commit_msg = "Merge PR #%i: %s" % (pr_number, pr_title)
   dbg("I: %s (branch: %s)" % (commit_msg, branch_name))
-  call("git", "merge", "--no-ff", ("origin/%s" % branch_name), "-m", commit_msg)
+  call("git", "fetch", "origin", pull_request["branch_ref"])
+  call("git", "merge", "--no-ff", "FETCH_HEAD", "-m", commit_msg)
 
 #  call("dch", "-i", "-U", "Prepare for release")
 

@@ -1,6 +1,13 @@
 #!/bin/bash
 
+if [ "$1" != "" ]; then
+    VERSION=$1
+fi
+
 cd nymea-app
 git checkout master
 git merge landing-silo
+git tag $VERSION
+
 git push
+git push --tags

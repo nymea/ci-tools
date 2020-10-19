@@ -10,6 +10,7 @@ if [ "$1" == "-r" ]; then
     shift
 fi
 
+
 while [ "$1" != "" ]; do
     FILE=$1
     FILENAME=$(basename -- "$1")
@@ -21,27 +22,26 @@ while [ "$1" != "" ]; do
     echo "    extension ${EXTENSION}"
 
     if [ "${EXTENSION}" == "exe" ]; then
-        STATICNAME=nymea-app-win-installer.exe
-        echo "Release windows build ${FILENAME} --> ${STATICNAME}"
+        STATICNAME=nymea-app-win-installer-latest.exe
+        echo "Releasing Windows build ${FILENAME} --> ${STATICNAME}"
     fi
 
     if [ "${EXTENSION}" == "dmg" ]; then
-        STATICNAME=nymea-app-osx-bundle.dmg
-        echo "Release macmacos build ${FILENAME} --> ${STATICNAME}"
+        STATICNAME=nymea-app-osx-bundle-latest.dmg
+        echo "Releasing macOS build ${FILENAME} --> ${STATICNAME}"
+    fi
+
+    if [ "${EXTENSION}" == "apk" ]; then
+        STATICNAME=nymea-app-android-latest.apk
+        echo "Releasint Android build ${FILENAME} --> ${STATICNAME}"
     fi
 
     # Release if we have a candidate
     if [ ! -z ${STATICNAME} ]; then
         cp -v ${FILE} ${RELEASEDIR}
 
-        # Clean link
-        if [ -f ${RELEASEDIR}/${STATICNAME} ]; then
-            rm -v ${RELEASEDIR}/${STATICNAME}
-        fi
-
-        # Create new link static
-        ln -v ${RELEASEDIR}/${FILENAME} ${RELEASEDIR}/${STATICNAME}
-        ls -l ${RELEASEDIR}/${STATICNAME}
+        rm ${RELEASEDIR}/${STATICNAME} -f
+        ln -s ${RELEASEDIR}/${STATICNAME} ${RELEASEDIR}/${FILENAME}
     fi
 
     shift

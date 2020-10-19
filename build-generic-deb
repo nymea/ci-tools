@@ -67,7 +67,7 @@ dch -U "" -l "$VERSION_APPEND~$DISTRO"
 dch -r "" --distribution $DISTRO
 sed -i '2,7d' debian/changelog
 
-PREFIX=`uuidgen | head -c 8 ; echo`
+PREFIX=`uuidgen | head -c 4 ; echo`
 CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH -c"
 
 for repo in $ADDITIONAL_REPOS; do
