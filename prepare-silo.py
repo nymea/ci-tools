@@ -30,11 +30,12 @@ def get_pull_requests(repository, tag_name, token):
     return get_pull_requests_gitlab(repo_user, repo_name, tag_name, token)
 
 def get_pull_requests_github(repo_user, repo_name, tag_name, token):
-  request = Request("http://api.github.com/repos/%s/%s/pulls" % (repo_user, repo_name))
+  request = Request("http://api.github.com/repos/%s/%s/pulls?per_page=100" % (repo_user, repo_name))
   request.add_header('Authorization', "token %s" % token)
   pull_requests_data = simplejson.load(urlopen(request))
   pull_requests = []
   users_cache = {}
+  print("There are %s pull requests" % len(pull_requests_data))
   for pull_request_data in pull_requests_data:
     for label in pull_request_data["labels"]:
       if label["name"] == tag_name:
