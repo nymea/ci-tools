@@ -72,8 +72,8 @@ CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH -c"
 
 REMOVE_FLAG=0
 for repo in $ADDITIONAL_REPOS; do
-  if "$repo" == "-r" ];
-    REMOVE_FLAT=1
+  if [ "$repo" == "-r" ]; then
+    REMOVE_FLAG=1
   elif [ $REMOVE_FLAG -eq 0 ]; then
     CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --add-repository $repo"
   else
