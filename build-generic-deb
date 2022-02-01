@@ -70,8 +70,15 @@ sed -i '2,7d' debian/changelog
 PREFIX=`uuidgen | head -c 4 ; echo`
 CROSSBUILDER_ARGS="--container-prefix=x$PREFIX -u $DISTRO -a $ARCH -c"
 
+REMOVE_FLAG=0
 for repo in $ADDITIONAL_REPOS; do
-  CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --add-repository $repo"
+  if "$repo" == "-r" ];
+    REMOVE_FLAT=1
+  elif [ $REMOVE_FLAG -eq 0 ]; then
+    CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --add-repository $repo"
+  else
+    CROSSBUILDER_ARGS="$CROSSBUILDER_ARGS --remove-repository $repo"
+  fi
 done
 
 # install a cleanup trap in case we fail
